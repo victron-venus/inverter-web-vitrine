@@ -1,0 +1,8 @@
+.herenow/slug
+.herenow/record_id
+.herenow/data.json
+.herenow/proxy.json
+*.env
+.env*
+local.secrets*
+**/credentials

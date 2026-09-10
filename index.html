@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Inverter · here.now vitrine</title>
+<meta name="description" content="Live Victron status via cloudflared inverter-gateway (proxied)" />
+<style>
+  :root {
+    --bg:#0b1220; --panel:#121a2b; --line:#243049; --text:#e8eefc; --muted:#8fa3c4;
+    --ok:#3dd68c; --warn:#f5c542; --bad:#ff6b6b; --accent:#5b8cff;
+    --solar:#f0b429; --batt:#3dd68c; --grid:#6ecbff; --load:#a78bfa;
+  }
+  * { box-sizing:border-box }
+  body { margin:0; font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:radial-gradient(1200px 600px at 10% -10%,#1a2744,transparent),
+               radial-gradient(900px 500px at 100% 0%,#1c2f28,transparent),var(--bg);
+    color:var(--text); min-height:100vh }
+  main { max-width:980px; margin:0 auto; padding:2rem 1.25rem 3rem }
+  header { display:flex; flex-wrap:wrap; gap:1rem; justify-content:space-between; align-items:end; margin-bottom:1.5rem }
+  h1 { margin:0; font-size:1.6rem; letter-spacing:-0.02em }
+  .sub { color:var(--muted); font-size:.95rem; margin-top:.35rem }
+  .badge { display:inline-flex; align-items:center; gap:.4rem; padding:.35rem .7rem; border-radius:999px;
+    border:1px solid var(--line); background:var(--panel); font-size:.8rem; color:var(--muted) }
+  .dot { width:.55rem; height:.55rem; border-radius:50%; background:var(--ok); box-shadow:0 0 10px var(--ok) }
+  .dot.bad { background:var(--bad); box-shadow:0 0 10px var(--bad) }
+  .dot.warn { background:var(--warn); box-shadow:0 0 10px var(--warn) }
+  .grid { display:grid; grid-template-columns:repeat(4,1fr); gap:.9rem; margin:1.25rem 0 }
+  @media (max-width:900px){ .grid{ grid-template-columns:1fr 1fr } }
+  @media (max-width:520px){ .grid{ grid-template-columns:1fr } }
+  .card { background:linear-gradient(180deg,#152038,var(--panel)); border:1px solid var(--line); border-radius:16px; padding:1.1rem 1.15rem }
+  .card h2 { margin:0; font-size:.8rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.06em }
+  .val { font-size:1.85rem; font-weight:700; margin-top:.45rem; letter-spacing:-.03em }
+  .val.solar{color:var(--solar)} .val.batt{color:var(--batt)} .val.grid{color:var(--grid)} .val.load{color:var(--load)}
+  .unit { font-size:.9rem; color:var(--muted); font-weight:500; margin-left:.2rem }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:.9rem }
+  @media (max-width:720px){ .row{ grid-template-columns:1fr } }
+  table { width:100%; border-collapse:collapse; font-size:.92rem }
+  th,td { text-align:left; padding:.55rem .2rem; border-bottom:1px solid var(--line) }
+  th { color:var(--muted); font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.05em }
+  a { color:var(--accent); text-decoration:none } a:hover { text-decoration:underline }
+  .note { margin-top:1.25rem; padding:1rem 1.1rem; border-radius:14px; border:1px dashed var(--line); color:var(--muted); font-size:.9rem; line-height:1.45 }
+  code { background:#0a1020; padding:.1rem .35rem; border-radius:6px; font-size:.85em }
+  footer { margin-top:2rem; color:var(--muted); font-size:.8rem }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <div>
+      <h1>Inverter vitrine</h1>
+      <p class="sub">Live via cloudflared → <code>inverter-gateway</code> (here.now proxy). Poll 15s.</p>
+    </div>
+    <div class="badge"><span class="dot" id="dot"></span> <span id="when">connecting…</span></div>
+  </header>
+  <section class="grid">
+    <article class="card"><h2>Solar PV</h2><div class="val solar" id="solar">—<span class="unit">W</span></div></article>
+    <article class="card"><h2>Battery</h2><div class="val batt" id="batt">—<span class="unit">W</span></div></article>
+    <article class="card"><h2>Grid</h2><div class="val grid" id="grid">—<span class="unit">W</span></div></article>
+    <article class="card"><h2>Consumption</h2><div class="val load" id="load">—<span class="unit">W</span></div></article>
+  </section>
+  <section class="row">
+    <article class="card">
+      <h2>Battery detail</h2>
+      <table>
+        <tr><th>Voltage</th><td id="bv">—</td></tr>
+        <tr><th>Current</th><td id="bi">—</td></tr>
+        <tr><th>Power</th><td id="bp">—</td></tr>
+      </table>
+    </article>
+    <article class="card">
+      <h2>Gateway</h2>
+      <table>
+        <tr><th>Health</th><td id="health">—</td></tr>
+        <tr><th>MQTT</th><td id="mqtt">—</td></tr>
+        <tr><th>Updated</th><td id="updated">—</td></tr>
+</table>
+    </article>
+  </section>
+  <div class="note">
+    <strong style="color:var(--text)">Repos</strong>
+    <div style="margin-top:.55rem; display:flex; flex-wrap:wrap; gap:.65rem 1.1rem">
+      <a href="https://github.com/victron-venus/inverter-gateway">inverter-gateway</a>
+      <a href="https://github.com/victron-venus/inverter-dashboard-go">inverter-dashboard-go</a>
+      <a href="https://github.com/victron-venus/inverter-dashboard">inverter-dashboard</a>
+      <a href="https://github.com/victron-venus/inverter-control">inverter-control</a>
+      <a href="https://github.com/victron-venus/inverter-desktop">inverter-desktop</a>
+    </div>
+  </div>
+  <footer>Live snapshot via cloudflared → inverter-gateway</footer>
+</main>
+<script>
+const fmt = (n,d=0) => (n==null || Number.isNaN(Number(n))) ? '—' : Number(n).toLocaleString(undefined,{maximumFractionDigits:d});
+const sys = (snap, key) => snap?.system?.['0/' + key];
+function sumPhases(snap, prefix) {
+  let t = 0, any=false;
+  for (const p of ['L1','L2','L3']) {
+    const v = sys(snap, prefix + '/' + p + '/Power');
+    if (typeof v === 'number') { t += v; any=true; }
+  }
+  return any ? t : null;
+}
+function apply(snap, health) {
+  const solar = sys(snap, 'Dc/Pv/Power');
+  const battP = sys(snap, 'Dc/Battery/Power');
+  const battV = sys(snap, 'Dc/Battery/Voltage');
+  const battI = sys(snap, 'Dc/Battery/Current');
+  const grid = sumPhases(snap, 'Ac/Grid');
+  const load = sumPhases(snap, 'Ac/Consumption');
+  document.getElementById('solar').innerHTML = fmt(solar) + '<span class="unit">W</span>';
+  document.getElementById('batt').innerHTML = fmt(battP) + '<span class="unit">W</span>';
+  document.getElementById('grid').innerHTML = fmt(grid) + '<span class="unit">W</span>';
+  document.getElementById('load').innerHTML = fmt(load) + '<span class="unit">W</span>';
+  document.getElementById('bv').textContent = fmt(battV, 2) + ' V';
+  document.getElementById('bi').textContent = fmt(battI, 2) + ' A';
+  document.getElementById('bp').textContent = fmt(battP) + ' W';
+  document.getElementById('health').textContent = health?.status || '—';
+  document.getElementById('mqtt').textContent = health?.mqtt_connected ? 'connected' : 'down';
+  document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+  const ok = !!(health && health.mqtt_connected);
+  document.getElementById('dot').className = ok ? 'dot' : 'dot bad';
+  document.getElementById('when').textContent = ok ? 'live · gateway' : 'gateway error';
+}
+let lastHealth = {status:'ok', mqtt_connected:true};
+async function refresh(includeHealth=false) {
+  try {
+    const tasks = [
+      fetch('/api/gateway/snapshot', {cache:'no-store'}).then(async r => {
+        if(!r.ok) throw new Error('snap '+r.status);
+        return r.json();
+      }),
+    ];
+    if (includeHealth) {
+      tasks.push(fetch('/api/gateway/health', {cache:'no-store'}).then(async r => {
+        if(!r.ok) throw new Error('health '+r.status);
+        return r.json();
+      }));
+    }
+    const results = await Promise.all(tasks);
+    const s = results[0];
+    if (results[1]) lastHealth = results[1];
+    else lastHealth = {status:'ok', mqtt_connected:true};
+    apply(s, lastHealth);
+  } catch (e) {
+    console.warn(e);
+    document.getElementById('dot').className = 'dot warn';
+    document.getElementById('when').textContent = 'proxy/error · ' + e.message;
+  }
+}
+refresh(true);
+setInterval(() => refresh(false), 15000);
+setInterval(() => refresh(true), 60000);
+</script>
+</body>
+</html>

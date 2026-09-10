@@ -1,0 +1,25 @@
+{
+  "proxies": {
+    "/api/gateway/health": {
+      "upstream": "https://YOUR_GATEWAY_HOST/health",
+      "method": "GET",
+      "rateLimit": "60/minute/ip",
+      "headers": {
+        "CF-Access-Client-Id": "${CF_ACCESS_CLIENT_ID}",
+        "CF-Access-Client-Secret": "${CF_ACCESS_CLIENT_SECRET}",
+        "User-Agent": "Mozilla/5.0 (compatible; here.now-proxy; +https://here.now)"
+      }
+    },
+    "/api/gateway/snapshot": {
+      "upstream": "https://YOUR_GATEWAY_HOST/v1/snapshot",
+      "method": "GET",
+      "rateLimit": "60/minute/ip",
+      "headers": {
+        "CF-Access-Client-Id": "${CF_ACCESS_CLIENT_ID}",
+        "CF-Access-Client-Secret": "${CF_ACCESS_CLIENT_SECRET}",
+        "Authorization": "Bearer ${GATEWAY_API_TOKEN}",
+        "User-Agent": "Mozilla/5.0 (compatible; here.now-proxy; +https://here.now)"
+      }
+    }
+  }
+}

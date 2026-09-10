@@ -1,0 +1,15 @@
+{
+  "system": {
+    "0/Dc/Pv/Power": 0,
+    "0/Dc/Battery/Power": 0,
+    "0/Dc/Battery/Voltage": 0,
+    "0/Dc/Battery/Current": 0,
+    "0/Ac/Grid/L1/Power": 0,
+    "0/Ac/Grid/L2/Power": 0,
+    "0/Ac/Grid/L3/Power": 0,
+    "0/Ac/Consumption/L1/Power": 0,
+    "0/Ac/Consumption/L2/Power": 0,
+    "0/Ac/Consumption/L3/Power": 0
+  },
+  "note": "Example shape only. Live data comes from inverter-gateway /v1/snapshot via the proxy."
+}
