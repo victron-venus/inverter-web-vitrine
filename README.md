@@ -24,10 +24,11 @@ Yes — if the browser never talks to Cerbo or MQTT directly, and the only publi
 
 Architecture sketch:
 
-```text
-Browser  →  static site + /api/gateway/* proxy
-                 ↓  (CF Access service token + gateway bearer — never in the page)
-         inverter-gateway  →  Cerbo MQTT (LAN)
+```mermaid
+flowchart LR
+  Browser --> Proxy["static site<br/>+/api/gateway/* proxy"]
+  Proxy -->|"CF Access service token<br/>+ gateway bearer<br/>(never in the page)"| GW["inverter-gateway"]
+  GW --> Cerbo["Cerbo MQTT (LAN)"]
 ```
 
 Companion Terraform for Access: [`terraform-cloudflare-inverter-gateway`](https://github.com/victron-venus/terraform-cloudflare-inverter-gateway).
