@@ -4,6 +4,12 @@ Public, **read-only** status page for a Victron plant — a thin web UI that tal
 
 **Live demo:** [https://inverter.alvit.here.now/](https://inverter.alvit.here.now/)
 
+<!-- ci-release-process:start -->
+## CI and deployment
+
+See [CI and deployment workflow](docs/release-workflow.md) for required checks and local commands. This repository uses validation-only policy; application release channels do not apply.
+<!-- ci-release-process:end -->
+
 ## Why this exists
 
 The rest of the stack (`inverter-dashboard`, `inverter-dashboard-go`, `inverter-control`, `inverter-desktop`) is great on LAN / VPN. This repo answers a different question:
