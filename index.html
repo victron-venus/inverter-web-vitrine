@@ -121,25 +121,24 @@ function apply(snap, health) {
   document.getElementById('dot').className = ok ? 'dot' : 'dot bad';
   document.getElementById('when').textContent = ok ? 'live · gateway' : 'gateway error';
 }
-let lastHealth = {status:'ok', mqtt_connected:true};
+let lastHealth = {status:'unknown', mqtt_connected:false};
 async function refresh(includeHealth=false) {
   try {
-    const tasks = [
-      fetch('/api/gateway/snapshot', {cache:'no-store'}).then(async r => {
-        if(!r.ok) throw new Error('snap '+r.status);
-        return r.json();
-      }),
-    ];
+    const snapRes = await fetch('/api/gateway/snapshot', {cache:'no-store'});
+    if (!snapRes.ok) throw new Error('snap ' + snapRes.status);
+    const s = await snapRes.json();
     if (includeHealth) {
-      tasks.push(fetch('/api/gateway/health', {cache:'no-store'}).then(async r => {
-        if(!r.ok) throw new Error('health '+r.status);
-        return r.json();
-      }));
+      // A failed request or invalid JSON must invalidate the previous success.
+      lastHealth = {status:'unknown', mqtt_connected:false};
+      const healthRes = await fetch('/api/gateway/health', {cache:'no-store'});
+      if (!healthRes.ok) {
+        // Negative HTTP health must clear optimistic/prior connected state.
+        lastHealth = {status:'error', mqtt_connected:false, http_status: healthRes.status};
+      } else {
+        lastHealth = await healthRes.json();
+      }
     }
-    const results = await Promise.all(tasks);
-    const s = results[0];
-    if (results[1]) lastHealth = results[1];
-    else lastHealth = {status:'ok', mqtt_connected:true};
+    // Snapshot-only polls keep lastHealth as-is (never invent mqtt_connected:true).
     apply(s, lastHealth);
   } catch (e) {
     console.warn(e);
