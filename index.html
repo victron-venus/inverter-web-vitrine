@@ -131,8 +131,10 @@ async function refresh(includeHealth=false) {
     const s = await snapRes.json();
     if (includeHealth) {
       if (generation !== healthGeneration) return;
-      // A failed request or invalid JSON must invalidate the previous success.
-      lastHealth = {status:'unknown', mqtt_connected:false};
+      // Clear prior success, but retain known failures while the check is pending.
+      if (lastHealth?.mqtt_connected) {
+        lastHealth = {status:'unknown', mqtt_connected:false};
+      }
       const healthRes = await fetch('/api/gateway/health', {cache:'no-store'});
       let health;
       if (!healthRes.ok) {

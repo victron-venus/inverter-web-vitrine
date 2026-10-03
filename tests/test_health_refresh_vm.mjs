@@ -217,4 +217,54 @@ await Promise.all([
   assert.equal(document.getElementById('mqtt').textContent, 'down')
 }
 
-console.log('ok: 10 health refresh sequences')
+// A pending health check must retain a known failure while clearing prior success.
+await Promise.all([
+  {
+    initial: { status: 503 }, initialStatus: 'error', pendingStatus: 'error',
+    replacement: { status: 200, json: { status: 'ok', mqtt_connected: true } },
+    finalStatus: 'ok', finalMqtt: 'connected',
+  },
+  {
+    initial: { status: 200, json: { status: 'degraded', mqtt_connected: false } },
+    initialStatus: 'degraded', pendingStatus: 'degraded',
+    replacement: { status: 200, json: { status: 'ok', mqtt_connected: true } },
+    finalStatus: 'ok', finalMqtt: 'connected',
+  },
+  {
+    initial: { status: 200, json: { status: 'ok', mqtt_connected: true } },
+    initialStatus: 'ok', pendingStatus: 'unknown',
+    replacement: { status: 503 }, finalStatus: 'error', finalMqtt: 'down',
+  },
+].map(async ({ initial, initialStatus, pendingStatus, replacement, finalStatus, finalMqtt }) => {
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document } = await runSequence([
+    snapOk,
+    { urlIncludes: '/api/gateway/health', ...initial },
+    snapOk,
+    { urlIncludes: '/api/gateway/health', ...replacement, onFetch: started.resolve, waitFor: response.promise },
+    snapOk,
+    snapOk,
+  ])
+  await refresh(true)
+  assert.equal(document.getElementById('health').textContent, initialStatus)
+  const pending = refresh(true)
+  await started.promise
+  await refresh(false)
+  try {
+    assert.equal(document.getElementById('health').textContent, pendingStatus)
+    assert.equal(document.getElementById('mqtt').textContent, 'down')
+    assert.equal(document.getElementById('dot').className, 'dot bad')
+  } finally {
+    response.resolve()
+  }
+  await pending
+  assert.equal(document.getElementById('health').textContent, finalStatus)
+  assert.equal(document.getElementById('mqtt').textContent, finalMqtt)
+  assert.equal(document.getElementById('dot').className, finalMqtt === 'connected' ? 'dot' : 'dot bad')
+  await refresh(false)
+  assert.equal(document.getElementById('health').textContent, finalStatus)
+  assert.equal(document.getElementById('mqtt').textContent, finalMqtt)
+}))
+
+console.log('ok: 13 health refresh sequences')
