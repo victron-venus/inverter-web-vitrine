@@ -55,11 +55,15 @@ function makeFetch(plan) {
     const step = plan[i++]
     if (!step) throw new Error('unexpected fetch ' + url)
     assert.ok(String(url).includes(step.urlIncludes), `url ${url} vs ${step.urlIncludes}`)
+    step.onFetch?.()
+    if (step.waitFor) await step.waitFor
     if (step.error) throw new Error(step.error)
     return {
       ok: step.status >= 200 && step.status < 300,
       status: step.status,
       async json() {
+        step.onJson?.()
+        if (step.jsonWaitFor) await step.jsonWaitFor
         if (step.jsonError) throw new Error(step.jsonError)
         return step.json
       },
@@ -159,4 +163,58 @@ await Promise.all([
   assert.equal(document.getElementById('dot').className, 'dot bad')
 }))
 
-console.log('ok: 5 health refresh sequences')
+function deferred() {
+  let resolve
+  const promise = new Promise(done => { resolve = done })
+  return { promise, resolve }
+}
+
+await Promise.all([
+  { stale: { status: 200, json: { status: 'ok', mqtt_connected: true } }, latest: { status: 503 }, expected: 'down' },
+  { stale: { status: 503 }, latest: { status: 200, json: { status: 'ok', mqtt_connected: true } }, expected: 'connected' },
+  { stale: { error: 'old request failed' }, latest: { status: 200, json: { status: 'ok', mqtt_connected: true } }, expected: 'connected' },
+  { stale: { status: 200, json: { status: 'ok', mqtt_connected: true } }, latest: { status: 503 }, expected: 'down', delayJson: true },
+].map(async ({ stale, latest, expected, delayJson }) => {
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document } = await runSequence([
+    snapOk,
+    { urlIncludes: '/api/gateway/health', ...stale, ...(delayJson
+      ? { onJson: started.resolve, jsonWaitFor: response.promise }
+      : { onFetch: started.resolve, waitFor: response.promise }) },
+    snapOk,
+    { urlIncludes: '/api/gateway/health', ...latest },
+    snapOk,
+  ])
+  const older = refresh(true)
+  await started.promise
+  await refresh(true)
+  response.resolve()
+  await older
+  assert.equal(document.getElementById('mqtt').textContent, expected)
+  assert.equal(document.getElementById('dot').className, expected === 'connected' ? 'dot' : 'dot bad')
+  await refresh(false)
+  assert.equal(document.getElementById('mqtt').textContent, expected)
+}))
+
+{
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document } = await runSequence([
+    { ...snapOk, onFetch: started.resolve, waitFor: response.promise },
+    snapOk,
+    { urlIncludes: '/api/gateway/health', status: 503 },
+    snapOk,
+  ])
+  const older = refresh(true)
+  await started.promise
+  await refresh(true)
+  response.resolve()
+  await older
+  assert.equal(document.getElementById('mqtt').textContent, 'down')
+  assert.equal(document.getElementById('dot').className, 'dot bad')
+  await refresh(false)
+  assert.equal(document.getElementById('mqtt').textContent, 'down')
+}
+
+console.log('ok: 10 health refresh sequences')

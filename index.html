@@ -122,25 +122,32 @@ function apply(snap, health) {
   document.getElementById('when').textContent = ok ? 'live · gateway' : 'gateway error';
 }
 let lastHealth = {status:'unknown', mqtt_connected:false};
+let healthGeneration = 0;
 async function refresh(includeHealth=false) {
+  const generation = includeHealth ? ++healthGeneration : null;
   try {
     const snapRes = await fetch('/api/gateway/snapshot', {cache:'no-store'});
     if (!snapRes.ok) throw new Error('snap ' + snapRes.status);
     const s = await snapRes.json();
     if (includeHealth) {
+      if (generation !== healthGeneration) return;
       // A failed request or invalid JSON must invalidate the previous success.
       lastHealth = {status:'unknown', mqtt_connected:false};
       const healthRes = await fetch('/api/gateway/health', {cache:'no-store'});
+      let health;
       if (!healthRes.ok) {
         // Negative HTTP health must clear optimistic/prior connected state.
-        lastHealth = {status:'error', mqtt_connected:false, http_status: healthRes.status};
+        health = {status:'error', mqtt_connected:false, http_status: healthRes.status};
       } else {
-        lastHealth = await healthRes.json();
+        health = await healthRes.json();
       }
+      if (generation !== healthGeneration) return;
+      lastHealth = health;
     }
     // Snapshot-only polls keep lastHealth as-is (never invent mqtt_connected:true).
     apply(s, lastHealth);
   } catch (e) {
+    if (includeHealth && generation !== healthGeneration) return;
     console.warn(e);
     document.getElementById('dot').className = 'dot warn';
     document.getElementById('when').textContent = 'proxy/error · ' + e.message;
