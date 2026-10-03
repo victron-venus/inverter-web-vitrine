@@ -81,8 +81,9 @@ async function runSequence(plan) {
   }
   vm.createContext(context)
   vm.runInContext(body, context)
-  // Expose refresh from context
-  const refresh = vm.runInContext('refresh', context)
+  // Top-level function declarations are available directly on the VM context.
+  const refresh = context.refresh
+  assert.equal(typeof refresh, 'function')
   return { refresh, document, context }
 }
 
@@ -137,10 +138,12 @@ const snapOk = {
   assert.equal(document.getElementById('dot').className, 'dot')
 }
 
-for (const failure of [
+// Each failure has its own context and fetch plan; only its refresh calls depend
+// on one another, so independent cases can run concurrently.
+await Promise.all([
   { error: 'network unavailable' },
   { status: 200, jsonError: 'malformed health response' },
-]) {
+].map(async (failure) => {
   const { refresh, document } = await runSequence([
     snapOk,
     { urlIncludes: '/api/gateway/health', status: 200, json: { status: 'ok', mqtt_connected: true } },
@@ -154,6 +157,6 @@ for (const failure of [
   await refresh(false)
   assert.equal(document.getElementById('mqtt').textContent, 'down')
   assert.equal(document.getElementById('dot').className, 'dot bad')
-}
+}))
 
 console.log('ok: 5 health refresh sequences')
