@@ -2,10 +2,7 @@
   "repository": "victron-venus/inverter-web-vitrine",
   "mode": "validation-only",
   "default_branch": "main",
-  "validation_workflows": [
-    "validate.yml",
-    "codeql.yml"
-  ],
+  "validation_workflows": ["validate.yml", "codeql.yml", "dependency-review.yml"],
   "local_checks": [
     "bash scripts/ci.sh"
   ],
