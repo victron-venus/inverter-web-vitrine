@@ -52,3 +52,7 @@ Do not equate a green metadata or release job with successful application tests.
 - Link only this project's real awarded badge once the assessment is accepted.
 
 The live assessment, when created, is the source of truth for the badge level. Unverified criteria remain open.
+
+## Additional source-analysis coverage
+
+The [CodeQL workflow](../.github/workflows/codeql.yml) also analyzes the Python source validators and the status-page JavaScript embedded in index.html. Existing language analyses remain enabled. Each language reports a separate analysis category; review its completed run and findings for the submitted revision. A passing GitHub Code Quality check does not substitute for these security analyses.
