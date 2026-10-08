@@ -123,6 +123,12 @@ function apply(snap, health) {
 }
 let lastHealth = {status:'unknown', mqtt_connected:false};
 let healthGeneration = 0;
+function markHealthPending() {
+  // Clear prior success, but retain known failures while the check is pending.
+  if (lastHealth?.mqtt_connected) {
+    lastHealth = {status:'unknown', mqtt_connected:false};
+  }
+}
 async function refresh(includeHealth=false) {
   const generation = includeHealth ? ++healthGeneration : null;
   try {
@@ -131,10 +137,7 @@ async function refresh(includeHealth=false) {
     const s = await snapRes.json();
     if (includeHealth) {
       if (generation !== healthGeneration) return;
-      // Clear prior success, but retain known failures while the check is pending.
-      if (lastHealth?.mqtt_connected) {
-        lastHealth = {status:'unknown', mqtt_connected:false};
-      }
+      markHealthPending();
       const healthRes = await fetch('/api/gateway/health', {cache:'no-store'});
       let health;
       if (!healthRes.ok) {
