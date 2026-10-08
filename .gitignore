@@ -6,3 +6,7 @@
 .env*
 local.secrets*
 **/credentials
+
+# Local Python validation caches
+__pycache__/
+*.py[cod]

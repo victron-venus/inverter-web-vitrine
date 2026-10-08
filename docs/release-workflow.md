@@ -30,7 +30,7 @@ copies; a green syntax/validate job is not a reviewed plan or a deployment.
 ## Project limits and rollout requirements
 
 - Validation-only policy: no synthetic beta/RC artifacts or tag-triggered stable releases.
-- Syntax baseline only: YAML/JSON/Python/shell/JavaScript where present. No application tests, browser playback, cluster rendering or deployment checks implied.
+- YAML/JSON/Python/shell/JavaScript syntax checks, HTML script extraction regressions and offline gateway-health VM tests. Browser playback, cluster rendering and deployment remain outside these checks.
 
 For public repositories, merge and verify the workflows before enabling the
 additive Terraform **CI gate** ruleset. Where release/deployment workflows use
