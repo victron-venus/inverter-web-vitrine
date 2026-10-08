@@ -78,3 +78,9 @@ Configure secrets in your host’s variable store (for here.now: account/workspa
 ## License
 
 MIT (via org template when the GitHub repo is created).
+
+## Contributing and security
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for reports, development checks and pull requests,
+[SECURITY.md](SECURITY.md) for private vulnerability reporting and deployment trust boundaries,
+and the [OpenSSF evidence index](docs/openssf-evidence.md) for assessment references and remaining verification.
