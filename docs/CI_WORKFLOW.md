@@ -29,4 +29,4 @@ branch and the `production` environment; validation never deploys resources.
 ## Coverage limits
 
 - Validation-only policy: no synthetic beta/RC artifacts or tag-triggered stable releases.
-- Syntax baseline only: YAML/JSON/Python/shell/JavaScript where present. No application tests, browser playback, cluster rendering or deployment checks implied.
+- YAML/JSON/Python/shell/JavaScript syntax checks, HTML script extraction regressions and offline gateway-health VM tests. Browser playback, cluster rendering and deployment remain outside these checks.

@@ -3,6 +3,7 @@
  * Never calls a live backend — fetch is mocked.
  */
 import assert from 'node:assert/strict'
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import path from 'node:path'
 import vm from 'node:vm'
@@ -10,7 +11,7 @@ import { fileURLToPath } from 'node:url'
 
 const root = path.dirname(path.dirname(fileURLToPath(import.meta.url)))
 const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8')
-const script = html.match(/<script>([\s\S]*?)<\/script>/)[1]
+const script = JSON.parse(execFileSync('python3', [path.join(root, 'tests/extract_inline_script.py')], { input: html, encoding: 'utf8' }))
 // Drop auto-start timers/boot refresh so tests drive refresh explicitly.
 const body = script
   .replace(/\nrefresh\(true\);\s*\nsetInterval\(\(\) => refresh\(false\), 15000\);\s*\nsetInterval\(\(\) => refresh\(true\), 60000\);\s*/, '\n')
