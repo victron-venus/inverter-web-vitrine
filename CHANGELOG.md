@@ -24,3 +24,5 @@ Security: no assigned runtime vulnerability is fixed by this update.
 Upgrade: use a reviewed immutable source version and recheck proxy secrets, exact
 read-only routes and chosen public fields at the host. No data migration applies.
 Security: no public vulnerability identifier was assigned to these changes.
+
+Project links now use explicit zero tab stops; keyboard tests require forward navigation through all five and backward navigation on every supported browser.
