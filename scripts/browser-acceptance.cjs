@@ -147,7 +147,11 @@ async function main() {
       const completed = page.waitForResponse(response => response.url().endsWith('/api/gateway/health') && response.status() === 503);
       heldHealth.shift()();
       await completed;
-      await delay(100);
+      // Error responses are intentionally not read by the application. Drain
+      // rendering turns without waiting for an unconsumed response body.
+      const settled = page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      await page.clock.runFor(40);
+      await settled;
       assert.equal(await text('health'), 'ok');
       assert.equal(await text('mqtt'), 'connected');
     });
