@@ -56,3 +56,7 @@ The live assessment, when created, is the source of truth for the badge level. U
 ## Additional source-analysis coverage
 
 The [CodeQL workflow](../.github/workflows/codeql.yml) also analyzes the Python source validators and the status-page JavaScript embedded in index.html. Existing language analyses remain enabled. Each language reports a separate analysis category; review its completed run and findings for the submitted revision. A passing GitHub Code Quality check does not substitute for these security analyses.
+
+## Current review
+
+See [security boundaries](security-boundaries.md), [source versioning](source-versioning.md), [source changelog](../CHANGELOG.md), [governance](../GOVERNANCE.md) and [roadmap](roadmap.md). The live assessment records supported evidence and remaining Silver gaps.

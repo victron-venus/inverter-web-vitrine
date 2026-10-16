@@ -172,8 +172,10 @@ async function main() {
         cards:[...document.querySelectorAll('.grid .card')].map(card => {const r=card.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};})}));
       assert(geometry.scroll <= geometry.width, 'Page must not overflow a mobile viewport');
       for (let index=1;index<geometry.cards.length;index++) assert(geometry.cards[index].top >= geometry.cards[index-1].bottom, 'Cards must stack without overlap');
-      // WebKit's default full-keyboard-access policy uses Option+Tab for links.
-      await page.keyboard.press(engine === 'webkit' ? 'Alt+Tab' : 'Tab');
+      // macOS WebKit uses Option+Tab for links. On Windows, Alt+Tab is an
+      // OS task-switch shortcut rather than in-page keyboard navigation.
+      const linkKey = engine === 'webkit' && process.platform === 'darwin' ? 'Alt+Tab' : 'Tab';
+      await page.keyboard.press(linkKey);
       assert.equal(await page.locator(':focus').textContent(), 'inverter-gateway');
     });
     assert.deepEqual(pageErrors, []);
