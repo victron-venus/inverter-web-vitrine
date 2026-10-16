@@ -59,4 +59,4 @@ The [CodeQL workflow](../.github/workflows/codeql.yml) also analyzes the Python 
 
 ## Current review
 
-See [security boundaries](security-boundaries.md), [source versioning](source-versioning.md), [source changelog](../CHANGELOG.md), [governance](../GOVERNANCE.md) and [roadmap](roadmap.md). The live assessment records supported evidence and remaining Silver gaps.
+See [helper TLS profile](release-tls-profile.md), [security boundaries](security-boundaries.md), [source versioning](source-versioning.md), [source changelog](../CHANGELOG.md), [governance](../GOVERNANCE.md) and [roadmap](roadmap.md). The live assessment records supported evidence and remaining Silver gaps.

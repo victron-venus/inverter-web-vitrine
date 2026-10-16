@@ -15,8 +15,12 @@ unexpected network requests. Old health responses cannot overwrite newer state.
 
 The maintained application does not implement cryptographic primitives or user
 password storage. Browsers and the separately administered HTTPS host terminate
-TLS. Its Python/JavaScript validation helpers operate on local synthetic data;
-Node SHA-256 binds the tested page identity. GitHub HTTPS delivers source. No
+TLS. The source and browser validation helpers operate on local synthetic data;
+Node SHA-256 binds the tested page identity. The separate release-control helper
+can invoke GitHub CLI for read-only `status`/`doctor` API queries even though this
+repository uses validation-only delivery. Use the complete, verified
+[GitHub CLI TLS profile](release-tls-profile.md) for these operations. GitHub HTTPS
+delivers source. No
 claim is made that a source-level test validates a live proxy's key lengths,
 secret handling or deployment.
 
