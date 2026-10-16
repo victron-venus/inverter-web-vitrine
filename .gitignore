@@ -10,3 +10,5 @@ local.secrets*
 # Local Python validation caches
 __pycache__/
 *.py[cod]
+node_modules/
+.compatibility/
