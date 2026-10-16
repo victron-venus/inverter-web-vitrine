@@ -172,9 +172,15 @@ async function main() {
         cards:[...document.querySelectorAll('.grid .card')].map(card => {const r=card.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};})}));
       assert(geometry.scroll <= geometry.width, 'Page must not overflow a mobile viewport');
       for (let index=1;index<geometry.cards.length;index++) assert(geometry.cards[index].top >= geometry.cards[index-1].bottom, 'Cards must stack without overlap');
-      // WebKit's default full-keyboard-access policy uses Option+Tab for links.
-      await page.keyboard.press(engine === 'webkit' ? 'Alt+Tab' : 'Tab');
-      assert.equal(await page.locator(':focus').textContent(), 'inverter-gateway');
+      // Explicit zero tab stops in the shipped page make links keyboard
+      // reachable even when the WebKit port disables implicit link tabbing.
+      for (const label of ['inverter-gateway', 'inverter-dashboard-go',
+        'inverter-dashboard', 'inverter-control', 'inverter-desktop']) {
+        await page.keyboard.press('Tab');
+        assert.equal(await page.locator(':focus').textContent(), label);
+      }
+      await page.keyboard.press('Shift+Tab');
+      assert.equal(await page.locator(':focus').textContent(), 'inverter-control');
     });
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(blockedRequests, []);

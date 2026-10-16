@@ -1,5 +1,7 @@
 # inverter-web-vitrine
 
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/15570/badge)](https://www.bestpractices.dev/projects/15570)
+
 Public, **read-only** status page for a Victron plant — a thin web UI that talks to [`inverter-gateway`](https://github.com/victron-venus/inverter-gateway) through a same-origin proxy (here.now today; any static host + edge proxy works the same way).
 
 **Live demo:** [https://inverter.alvit.here.now/](https://inverter.alvit.here.now/)
@@ -7,7 +9,7 @@ Public, **read-only** status page for a Victron plant — a thin web UI that tal
 <!-- ci-release-process:start -->
 ## CI and deployment
 
-See [CI and deployment workflow](docs/release-workflow.md) for required checks and local commands. This repository uses validation-only policy; application release channels do not apply.
+See [CI and deployment workflow](docs/release-workflow.md) for required checks and local commands. This repository uses validation-only policy; application release channels do not apply. See [source versioning](docs/source-versioning.md) and the [changelog](CHANGELOG.md) for reviewed source-delivery identities and upgrade notes.
 <!-- ci-release-process:end -->
 
 The required checks include [real browser acceptance](docs/browser-compatibility.md)
@@ -81,7 +83,7 @@ Configure secrets in your host’s variable store (for here.now: account/workspa
 
 ## License
 
-MIT (via org template when the GitHub repo is created).
+[MIT](LICENSE).
 
 ## Contributing and security
 

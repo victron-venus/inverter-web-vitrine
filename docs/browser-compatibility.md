@@ -16,8 +16,10 @@ advance the original timers. No plant, gateway, account or production credential
 are used; unexpected outbound requests fail the suite.
 
 The long-status mobile case protects against table content stretching cards
-beyond the viewport. On WebKit, link navigation uses its default Option+Tab
-shortcut; other engines use Tab. Each successful target records the actual
+beyond the viewport. The five project links have explicit `tabindex="0"` in the
+shipped HTML so ports that disable implicit link tabbing still expose them in
+source order. The keyboard test presses Tab through all five links and Shift+Tab
+back once on every target; it never assigns focus through script. Each successful target records the actual
 browser version, named scenarios and the page SHA-256; traces and failure
 screenshots are retained by the shared workflow.
 
