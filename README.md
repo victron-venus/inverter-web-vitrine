@@ -7,6 +7,12 @@ Public, **read-only** status page for a Victron plant — a thin web UI that tal
 **Live demo:** [https://inverter.alvit.here.now/](https://inverter.alvit.here.now/)
 
 <!-- ci-release-process:start -->
+[![Read-only vitrine rendered with synthetic demonstration data](docs/images/app-hero.png)](docs/images/vitrine-demo.jpg)
+
+*Read-only vitrine rendered with synthetic demonstration data. Click for the original screenshot.*
+
+[Artwork source and regeneration](docs/images/README.md).
+
 ## CI and deployment
 
 See [CI and deployment workflow](docs/release-workflow.md) for required checks and local commands. This repository uses validation-only policy; application release channels do not apply. See [source versioning](docs/source-versioning.md) and the [changelog](CHANGELOG.md) for reviewed source-delivery identities and upgrade notes.
