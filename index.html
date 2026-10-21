@@ -100,7 +100,7 @@ function sumPhases(snap, prefix) {
   }
   return any ? t : null;
 }
-function apply(snap, health) {
+function apply(snap) {
   const solar = sys(snap, 'Dc/Pv/Power');
   const battP = sys(snap, 'Dc/Battery/Power');
   const battV = sys(snap, 'Dc/Battery/Voltage');
@@ -114,15 +114,28 @@ function apply(snap, health) {
   document.getElementById('bv').textContent = fmt(battV, 2) + ' V';
   document.getElementById('bi').textContent = fmt(battI, 2) + ' A';
   document.getElementById('bp').textContent = fmt(battP) + ' W';
+  document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+}
+function applyHealth() {
+  const health = lastHealth;
   document.getElementById('health').textContent = health?.status || '—';
   document.getElementById('mqtt').textContent = health?.mqtt_connected ? 'connected' : 'down';
-  document.getElementById('updated').textContent = new Date().toLocaleTimeString();
+  if (snapshotError) {
+    showError(snapshotError);
+    return;
+  }
   const ok = !!(health && health.mqtt_connected);
   document.getElementById('dot').className = ok ? 'dot' : 'dot bad';
   document.getElementById('when').textContent = ok ? 'live · gateway' : 'gateway error';
 }
 let lastHealth = {status:'unknown', mqtt_connected:false};
 let healthGeneration = 0;
+let snapshotGeneration = 0;
+let snapshotError = null;
+function showError(error) {
+  document.getElementById('dot').className = 'dot warn';
+  document.getElementById('when').textContent = 'proxy/error · ' + error.message;
+}
 function markHealthPending() {
   // Clear prior success, but retain known failures while the check is pending.
   if (lastHealth?.mqtt_connected) {
@@ -131,31 +144,41 @@ function markHealthPending() {
 }
 async function refresh(includeHealth=false) {
   const generation = includeHealth ? ++healthGeneration : null;
+  const snapshotRequest = ++snapshotGeneration;
   try {
     const snapRes = await fetch('/api/gateway/snapshot', {cache:'no-store'});
     if (!snapRes.ok) throw new Error('snap ' + snapRes.status);
     const s = await snapRes.json();
-    if (includeHealth) {
-      if (generation !== healthGeneration) return;
-      markHealthPending();
-      const healthRes = await fetch('/api/gateway/health', {cache:'no-store'});
-      let health;
-      if (!healthRes.ok) {
-        // Negative HTTP health must clear optimistic/prior connected state.
-        health = {status:'error', mqtt_connected:false, http_status: healthRes.status};
-      } else {
-        health = await healthRes.json();
-      }
-      if (generation !== healthGeneration) return;
-      lastHealth = health;
+    if (snapshotRequest === snapshotGeneration) {
+      snapshotError = null;
+      apply(s);
+      // Snapshot-only polls never invent connected health or repaint old values.
+      applyHealth();
     }
-    // Snapshot-only polls keep lastHealth as-is (never invent mqtt_connected:true).
-    apply(s, lastHealth);
   } catch (e) {
-    if (includeHealth && generation !== healthGeneration) return;
+    if (snapshotRequest !== snapshotGeneration) return;
     console.warn(e);
-    document.getElementById('dot').className = 'dot warn';
-    document.getElementById('when').textContent = 'proxy/error · ' + e.message;
+    snapshotError = e;
+    showError(e);
+    return;
+  }
+  // Health has its own generation: a newer snapshot must not cancel this check.
+  if (!includeHealth || generation !== healthGeneration) return;
+  markHealthPending();
+  applyHealth();
+  try {
+    const healthRes = await fetch('/api/gateway/health', {cache:'no-store'});
+    const health = healthRes.ok
+      ? await healthRes.json()
+      : {status:'error', mqtt_connected:false, http_status: healthRes.status};
+    if (generation !== healthGeneration) return;
+    lastHealth = health;
+    applyHealth();
+  } catch (e) {
+    if (generation !== healthGeneration) return;
+    console.warn(e);
+    // A health result must not hide a newer snapshot failure.
+    if (!snapshotError) showError(e);
   }
 }
 refresh(true);

@@ -1,5 +1,21 @@
 # Source changelog
 
+## 2026-10-21 source delivery
+
+- Ignore superseded snapshot responses and failures, including delayed JSON
+  bodies. Only an accepted snapshot changes measurements and their update time.
+- Apply independent health results without replaying a full poll's older
+  snapshot or clearing a newer snapshot error. Keep existing pending-health and
+  failure behavior across snapshot-only polls.
+- Add deterministic response-order regressions and real-browser checks for late
+  snapshots and slow full polls across the existing browser matrix.
+
+Upgrade: use the accepted full commit SHA. Poll intervals and proxy routes stay
+the same. This validation-only project has no beta/RC artifacts and is not
+deployed automatically; retain the previous accepted SHA for rollback.
+
+Security: this is a display consistency fix, with no assigned vulnerability ID.
+
 ## 2026-10-16 source delivery
 
 - Correct the real keyboard-navigation browser check: macOS WebKit uses

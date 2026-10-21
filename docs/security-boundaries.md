@@ -25,7 +25,7 @@ claim is made that a source-level test validates a live proxy's key lengths,
 secret handling or deployment.
 
 CodeQL analyzes maintained JavaScript, Python and Actions. Source checks, VM
-behavioral tests and nine real-browser scenarios complement analysis. A full
+behavioral tests and eleven real-browser scenarios complement analysis. A full
 statement/branch-coverage measurement and a current fuzzing campaign have not
 been established. Hardware and production endpoints are never used by CI.
 

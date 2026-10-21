@@ -10,8 +10,9 @@ Every target must pass; GitHub-hosted runners remain the default.
 `scripts/browser-acceptance.cjs` serves the committed `index.html` unchanged and
 uses synthetic same-origin HTTP responses. It tests real rendered telemetry and
 phase sums, the 15-second snapshot and 60-second health polling schedules, HTTP
-and malformed-response errors, recovery, an old response arriving after a newer
-success, untrusted status text, and mobile/keyboard navigation. Browser clocks
+and malformed-response errors, recovery, old health and snapshot responses
+arriving after newer results, a full poll retaining an older snapshot while
+health is pending, untrusted status text, and mobile/keyboard navigation. Browser clocks
 advance the original timers. No plant, gateway, account or production credentials
 are used; unexpected outbound requests fail the suite.
 
@@ -34,3 +35,7 @@ The isolated locks under `tools/browser-compatibility/` and inventory in
 together and review the actual browser versions. Local code checks remain
 `bash scripts/ci.sh`; the browser adapter expects the runtime/evidence environment
 provided by the shared pipeline.
+
+The Node VM suite additionally covers delayed snapshot JSON, stale snapshot
+failures and a late health success following a newer snapshot failure. It uses
+24 deterministic polling sequences without network or timers.

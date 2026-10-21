@@ -10,7 +10,7 @@ const playwright = require(process.env.CI_PLAYWRIGHT_MODULE);
 const diagnostics = process.env.CI_BROWSER_DIAGNOSTICS;
 const runtime = JSON.parse(fs.readFileSync(path.join(diagnostics, 'runtime.json'), 'utf8'));
 const html = fs.readFileSync(path.join(__dirname, '../index.html'));
-const scenarios = [], pageErrors = [], blockedRequests = [], heldHealth = [];
+const scenarios = [], pageErrors = [], blockedRequests = [], heldHealth = [], heldSnapshots = [];
 const fixture = {
   snapshotStatus: 200,
   snapshot: {system: {
@@ -20,7 +20,7 @@ const fixture = {
     '0/Ac/Consumption/L1/Power': 1200, '0/Ac/Consumption/L3/Power': 400,
   }},
   healthStatus: 200, health: {status: 'ok', mqtt_connected: true},
-  healthCalls: 0, holdNextHealth: false,
+  healthCalls: 0, holdNextHealth: false, holdNextSnapshot: false,
 };
 function respond(response, status, body) {
   response.writeHead(status, {'Content-Type': 'application/json', 'Cache-Control': 'no-store'});
@@ -34,7 +34,15 @@ const server = http.createServer((request, response) => {
     return response.end(html);
   }
   if (route === '/favicon.ico') return response.writeHead(204).end();
-  if (route === '/api/gateway/snapshot') return respond(response, fixture.snapshotStatus, fixture.snapshot);
+  if (route === '/api/gateway/snapshot') {
+    if (fixture.holdNextSnapshot) {
+      fixture.holdNextSnapshot = false;
+      const status = fixture.snapshotStatus, body = JSON.stringify(fixture.snapshot);
+      heldSnapshots.push(() => respond(response, status, body));
+      return;
+    }
+    return respond(response, fixture.snapshotStatus, fixture.snapshot);
+  }
   if (route === '/api/gateway/health') {
     fixture.healthCalls++;
     if (fixture.holdNextHealth) {
@@ -155,6 +163,37 @@ async function main() {
       assert.equal(await text('health'), 'ok');
       assert.equal(await text('mqtt'), 'connected');
     });
+    await scenario('late-snapshot-cannot-roll-back-newer-telemetry', async () => {
+      fixture.snapshot.system['0/Dc/Pv/Power'] = 2800;
+      fixture.holdNextSnapshot = true;
+      const older = page.evaluate(() => refresh(false));
+      await eventually(() => heldSnapshots.length, 1, 'Old snapshot must remain pending');
+      fixture.snapshot.system['0/Dc/Pv/Power'] = 2900;
+      await page.evaluate(() => refresh(false));
+      await waitText('solar', '2,900W');
+      const updated = await text('updated');
+      heldSnapshots.shift()();
+      await older;
+      assert.equal(await text('solar'), '2,900W');
+      assert.equal(await text('updated'), updated);
+      assert.equal(await text('when'), 'live · gateway');
+    });
+    await scenario('late-full-poll-updates-health-without-replaying-its-snapshot', async () => {
+      fixture.snapshot.system['0/Dc/Pv/Power'] = 3000;
+      fixture.holdNextHealth = true;
+      const full = page.evaluate(() => refresh(true));
+      await eventually(() => heldHealth.length, 1, 'Full poll health must remain pending');
+      fixture.snapshot.system['0/Dc/Pv/Power'] = 3100;
+      await page.evaluate(() => refresh(false));
+      await waitText('solar', '3,100W');
+      const updated = await text('updated');
+      heldHealth.shift()();
+      await full;
+      assert.equal(await text('solar'), '3,100W');
+      assert.equal(await text('updated'), updated);
+      assert.equal(await text('health'), 'error');
+      assert.equal(await text('mqtt'), 'down');
+    });
     await scenario('untrusted-status-is-text-and-missing-metrics-remain-empty', async () => {
       const marker = '<img src=x onerror="window.fixtureExecuted=true">';
       fixture.snapshot = {system:{'0/Dc/Pv/Power':marker}};
@@ -184,13 +223,14 @@ async function main() {
     });
     assert.deepEqual(pageErrors, []);
     assert.deepEqual(blockedRequests, []);
-    assert.equal(scenarios.length, 9);
+    assert.equal(scenarios.length, 11);
     fs.writeFileSync(process.env.CI_BROWSER_EVIDENCE, JSON.stringify({...runtime, scenarios,
       testsPassed:scenarios.length, testsFailed:0, indexSha256:crypto.createHash('sha256').update(html).digest('hex')},null,2)+'\n');
   } catch (error) {
     if (page) await page.screenshot({path:path.join(diagnostics,'failure.png'),fullPage:true}).catch(() => {});
     throw error;
   } finally {
+    for (const release of heldSnapshots.splice(0)) release();
     for (const release of heldHealth.splice(0)) release();
     if (context) await context.tracing.stop({path:path.join(diagnostics,'trace.zip')}).catch(() => {});
     if (browser) await browser.close();
