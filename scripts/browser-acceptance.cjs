@@ -171,7 +171,9 @@ async function main() {
       fixture.snapshot.system['0/Dc/Pv/Power'] = 2900;
       await page.evaluate(() => refresh(false));
       await waitText('solar', '2,900W');
-      const updated = await text('updated');
+      // The paused clock would hide a timestamp-only repaint at the same time.
+      const updated = 'accepted snapshot timestamp';
+      await page.evaluate(value => { document.getElementById('updated').textContent = value; }, updated);
       heldSnapshots.shift()();
       await older;
       assert.equal(await text('solar'), '2,900W');
@@ -186,7 +188,8 @@ async function main() {
       fixture.snapshot.system['0/Dc/Pv/Power'] = 3100;
       await page.evaluate(() => refresh(false));
       await waitText('solar', '3,100W');
-      const updated = await text('updated');
+      const updated = 'accepted snapshot timestamp';
+      await page.evaluate(value => { document.getElementById('updated').textContent = value; }, updated);
       heldHealth.shift()();
       await full;
       assert.equal(await text('solar'), '3,100W');
