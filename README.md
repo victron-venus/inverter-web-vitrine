@@ -22,6 +22,13 @@ The required checks include [real browser acceptance](docs/browser-compatibility
 of this page on Linux, Windows and macOS. Scheduled and manual audits expand to
 three pinned browser generations plus installed Chrome/Edge channels.
 
+Snapshot polls run every 15 seconds; health checks run every 60 seconds. The
+latest snapshot request owns the displayed measurements and update time, so a
+late response cannot roll them back. Health results are tracked independently:
+a slow health check can update connection status without replaying its older
+snapshot, and it cannot hide a newer snapshot failure. These checks describe
+the proxy responses, not the physical freshness of individual sensor readings.
+
 ## Why this exists
 
 The rest of the stack (`inverter-dashboard`, `inverter-dashboard-go`, `inverter-control`, `inverter-desktop`) is great on LAN / VPN. This repo answers a different question:

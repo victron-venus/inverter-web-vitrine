@@ -264,4 +264,140 @@ await Promise.all([
   assert.equal(document.getElementById('mqtt').textContent, finalMqtt)
 }))
 
-console.log('ok: 13 health refresh sequences')
+function snapshot(power, extra = {}) {
+  return { ...snapOk, json: { system: { '0/Dc/Pv/Power': power } }, ...extra }
+}
+
+function assertPower(document, power) {
+  assert.equal(document.getElementById('solar').innerHTML, `${power}<span class="unit">W</span>`)
+}
+
+function useDistinctUpdateTimes(context) {
+  let updates = 0
+  context.Date = class {
+    toLocaleTimeString() { return `update-${++updates}` }
+  }
+}
+
+// A stale response, JSON body or failure must not repaint a newer snapshot.
+await Promise.all([
+  {},
+  { delayJson: true },
+  { error: 'stale snapshot network failure' },
+  { delayJson: true, jsonError: 'stale snapshot JSON failure' },
+  { status: 503 },
+].map(async ({ delayJson, ...stale }) => {
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document, context } = await runSequence([
+    snapshot(1),
+    { urlIncludes: '/api/gateway/health', status: 200, json: { status: 'ok', mqtt_connected: true } },
+    snapshot(100, { ...stale, ...(delayJson
+      ? { onJson: started.resolve, jsonWaitFor: response.promise }
+      : { onFetch: started.resolve, waitFor: response.promise }) }),
+    snapshot(200),
+  ])
+  useDistinctUpdateTimes(context)
+  await refresh(true)
+  const older = refresh(false)
+  await started.promise
+  await refresh(false)
+  assertPower(document, 200)
+  const updated = document.getElementById('updated').textContent
+  response.resolve()
+  await older
+  assertPower(document, 200)
+  assert.equal(document.getElementById('updated').textContent, updated)
+  assert.equal(document.getElementById('when').textContent, 'live · gateway')
+}))
+
+// A full poll may finish health after a newer snapshot, but can update only health.
+await Promise.all([
+  { health: { status: 200, json: { status: 'ok', mqtt_connected: true } }, mqtt: 'connected' },
+  { health: { status: 503 }, mqtt: 'down' },
+  { health: { error: 'latest health failed' }, mqtt: 'down' },
+].map(async ({ health, mqtt }) => {
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document, context } = await runSequence([
+    snapshot(100),
+    { urlIncludes: '/api/gateway/health', ...health, onFetch: started.resolve, waitFor: response.promise },
+    snapshot(200),
+  ])
+  useDistinctUpdateTimes(context)
+  const full = refresh(true)
+  await started.promise
+  await refresh(false)
+  assertPower(document, 200)
+  const updated = document.getElementById('updated').textContent
+  response.resolve()
+  await full
+  assertPower(document, 200)
+  assert.equal(document.getElementById('updated').textContent, updated)
+  assert.equal(document.getElementById('mqtt').textContent, mqtt)
+}))
+
+{
+  // A full poll's late snapshot must not cancel its independent health check.
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document, context } = await runSequence([
+    snapshot(100, { onFetch: started.resolve, waitFor: response.promise }),
+    snapshot(200),
+    { urlIncludes: '/api/gateway/health', status: 200, json: { status: 'ok', mqtt_connected: true } },
+  ])
+  useDistinctUpdateTimes(context)
+  const full = refresh(true)
+  await started.promise
+  await refresh(false)
+  const updated = document.getElementById('updated').textContent
+  response.resolve()
+  await full
+  assertPower(document, 200)
+  assert.equal(document.getElementById('updated').textContent, updated)
+  assert.equal(document.getElementById('mqtt').textContent, 'connected')
+}
+
+{
+  // A late snapshot-only success cannot undo the newest full poll's failure state.
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document } = await runSequence([
+    snapshot(100, { onFetch: started.resolve, waitFor: response.promise }),
+    snapshot(200),
+    { urlIncludes: '/api/gateway/health', status: 503 },
+  ])
+  const older = refresh(false)
+  await started.promise
+  await refresh(true)
+  response.resolve()
+  await older
+  assertPower(document, 200)
+  assert.equal(document.getElementById('health').textContent, 'error')
+  assert.equal(document.getElementById('dot').className, 'dot bad')
+}
+
+{
+  // A late health success cannot hide a newer snapshot failure.
+  const started = deferred()
+  const response = deferred()
+  const { refresh, document } = await runSequence([
+    snapshot(100),
+    { urlIncludes: '/api/gateway/health', status: 200, json: { status: 'ok', mqtt_connected: true },
+      onFetch: started.resolve, waitFor: response.promise },
+    snapshot(200, { error: 'newest snapshot failed' }),
+    snapshot(300),
+  ])
+  const full = refresh(true)
+  await started.promise
+  await refresh(false)
+  response.resolve()
+  await full
+  assert.equal(document.getElementById('when').textContent, 'proxy/error · newest snapshot failed')
+  assert.equal(document.getElementById('dot').className, 'dot warn')
+  await refresh(false)
+  assertPower(document, 300)
+  assert.equal(document.getElementById('when').textContent, 'live · gateway')
+}
+
+console.log('ok: 24 health/snapshot refresh sequences')
