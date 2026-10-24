@@ -1,5 +1,19 @@
 # Source changelog
 
+## 2026-10-24 CI reliability
+
+- Pin CodeRabbit Autofix to the reviewed toolkit revision with bounded retries
+  for temporary GitHub metadata-read failures, including truncated JSON and
+  refused connections. Each GET has at most three attempts and a 30-second
+  timeout; progress is visible in the Actions log.
+- Keep permission/rate-limit errors fail-fast and comment POST requests
+  single-attempt. After an uncertain write, inspect the existing Autofix marker
+  before retrying. See the [toolkit recovery guide](https://github.com/victron-venus/venus-os-ci-toolkit/blob/d24d978fe3e07c4342742af2ca5af83f7c3e7714/docs/CODERABBIT.md#request-autofix-after-a-completed-review).
+
+Upgrade: merge the workflow pin onto the default branch to activate it for new
+CodeRabbit events. No application redeployment or data migration is required.
+Security: no assigned runtime vulnerability is fixed by this update.
+
 ## 2026-10-21 source delivery
 
 - Ignore superseded snapshot responses and failures, including delayed JSON
