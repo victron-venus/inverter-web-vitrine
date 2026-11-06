@@ -16,7 +16,9 @@
   ],
   "visibility": "public",
   "change_scope": {
-    "documentation_paths": [],
+    "documentation_paths": [
+      "GOVERNANCE.md"
+    ],
     "required_paths": [],
     "always_validate_workflows": [
       "codeql.yml"
