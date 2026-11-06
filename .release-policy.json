@@ -2,7 +2,11 @@
   "repository": "victron-venus/inverter-web-vitrine",
   "mode": "validation-only",
   "default_branch": "main",
-  "validation_workflows": ["validate.yml", "codeql.yml", "dependency-review.yml"],
+  "validation_workflows": [
+    "validate.yml",
+    "codeql.yml",
+    "dependency-review.yml"
+  ],
   "local_checks": [
     "bash scripts/ci.sh"
   ],
@@ -10,5 +14,13 @@
     "Validation-only policy: no synthetic beta/RC artifacts or tag-triggered stable releases.",
     "YAML/JSON/Python/shell/JavaScript syntax checks, HTML script extraction regressions and offline gateway-health VM tests. Real browser acceptance checks the committed page with synthetic local HTTP responses; cluster access and deployment remain separate."
   ],
-  "visibility": "public"
+  "visibility": "public",
+  "change_scope": {
+    "documentation_paths": [],
+    "required_paths": [],
+    "always_validate_workflows": [
+      "codeql.yml"
+    ]
+  },
+  "nightly_cron": "25 2 * * *"
 }
