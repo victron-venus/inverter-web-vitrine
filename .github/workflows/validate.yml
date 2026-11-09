@@ -6,7 +6,7 @@ permissions:
   contents: read
 jobs:
   browser-compatibility:
-    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@427a937de66be398d624822e1af558c0e019e0df # main
+    uses: victron-venus/venus-os-ci-toolkit/.github/workflows/typescript-ci.yml@b07180c5b397133fd8ba296181eb630fd603d468 # main
     with:
       node-version: '22'
       run-node-ci: false
